@@ -1,29 +1,11 @@
-/*
-
-  ________.__                        _____.___.___________
- /  _____/|  | _____    ____  ____   \__  |   |\__    ___/
-/   \  ___|  | \__  \ _/ ___\/ __ \   /   |   |  |    |   
-\    \_\  \  |__/ __ \\  \__\  ___/   \____   |  |    |   
- \______  /____(____  /\___  >___  >  / ______|  |____|   
-        \/          \/     \/    \/   \/                  
-
-╔════════════════════════════════════════════════════════════════════════╗
-║                                                                        ║
-║  ## Created by GlaceYT!                                                ║
-║  ## Feel free to utilize any portion of the code                       ║
-║  ## DISCORD :  https://discord.com/invite/xQF9f9yUEM                   ║
-║  ## YouTube : https://www.youtube.com/@GlaceYt                         ║
-║                                                                        ║
-╚════════════════════════════════════════════════════════════════════════╝
-
-
-*/
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const yts = require('yt-search');
 const lang = require('../loadlanguage.js'); 
 const musicIcons = require('../UI/icons/musicicons.js');
+const { EventEmitter } = require('events');
 
-
+// Aumenta il numero massimo di listener per evitare l'errore MaxListenersExceededWarning
+EventEmitter.defaultMaxListeners = 20;
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -48,7 +30,6 @@ module.exports = {
     }
 
     try {
-      // Defer the reply to give more time for processing the search results
       await interaction.deferReply();
 
       const searchResults = await yts(query);
@@ -87,7 +68,9 @@ module.exports = {
           inline: false
         })));
 
-      await interaction.followUp({ embeds: [embed], components: rows });
+      if (!interaction.replied) {
+        await interaction.followUp({ embeds: [embed], components: rows });
+      }
 
       const filter = i => i.customId.startsWith('play_') && i.user.id === interaction.user.id;
       const collector = interaction.channel.createMessageComponentCollector({ filter, time: 15000 });
@@ -99,7 +82,6 @@ module.exports = {
         await i.reply({ content: lang.findSongSelected.replace('{title}', video.title), ephemeral: true });
 
         try {
-          // Use distube.play to either start playing or add to the queue
           await client.distube.play(voiceChannel, video.url, {
             member: interaction.member,
             textChannel: interaction.channel,
